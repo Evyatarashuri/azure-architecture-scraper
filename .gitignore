@@ -1,2 +1,14 @@
 
 .env
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+cache/
+
+config/
+
+download_models.sh/
+faiss_store/
+rag/
