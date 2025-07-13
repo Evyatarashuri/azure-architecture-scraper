@@ -4,8 +4,8 @@ from pymongo import MongoClient
 
 load_dotenv()
 
-MONGO_URI = os.getenv("MONGO_URI")
-DB_NAME = os.getenv("DB_NAME")
+MONGO_URI = os.getenv("MONGO_URI", "mongodb://mongo:27017")
+DB_NAME = os.getenv("DB_NAME", "azure_architecture")
 
 _client = None
 _db = None

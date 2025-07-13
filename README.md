@@ -21,15 +21,13 @@ Organizations spend millions on cloud infrastructure but often struggle to ident
 
 These instructions will help you set up the project locally using Docker Compose.
 
----
-
 ### Setup Instructions
 
 1. **Clone the repository**:
    ```bash
    git clone https://github.com/Evyatarashuri/azure-architecture.git
    cd azure-architecture
-׳׳׳
+```
 
 2. **Setup .env file**
 
@@ -73,7 +71,7 @@ CHROMA_DIR=/app/chroma_store
 MONGO_URI=mongodb://mongo:27017
 
 # MongoDB database name
-MONGO_DB=azure_architecture_db
+DB_NAME=azure_architecture
 
 # MongoDB collection for storing architecture links
 MONGO_COLLECTION_LINKS=architecture_links
