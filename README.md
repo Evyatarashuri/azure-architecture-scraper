@@ -31,6 +31,64 @@ These instructions will help you set up the project locally using Docker Compose
    cd azure-architecture
 ׳׳׳
 
+2. **Setup .env file**
+
+To create your local `.env` file, run one of the following commands:
+
+On Mac/Linux:
+```bash
+  touch .env
+```
+
+On PowerShell:
+```bash
+   New-Item -Path . -Name ".env" -ItemType "File"
+```
+
+📋 **Copy the following environment variables** into your local `.env` file to configure the project properly:
+
+```bash
+# Base URL for Ollama server (used for embeddings and chat model)
+OLLAMA_URL=http://ollama:11434
+
+# Embedding model name used by Ollama
+OLLAMA_MODEL_EMBEDDING=nomic-embed-text
+
+# Chat model name used by Ollama
+OLLAMA_MODEL_CHAT=mistral
+
+# Directory path for storing FAISS index files
+FAISS_INDEX_PATH=/app/faiss_store/index.faiss
+
+# File path for storing FAISS metadata (JSON)
+FAISS_METADATA_PATH=/app/faiss_store/metadata.json
+
+# Name of the ChromaDB collection
+CHROMA_COLLECTION_NAME=azure_architectures
+
+# Path to ChromaDB persistent directory
+CHROMA_DIR=/app/chroma_store
+
+# MongoDB connection string
+MONGO_URI=mongodb://mongo:27017
+
+# MongoDB database name
+MONGO_DB=azure_architecture_db
+
+# MongoDB collection for storing architecture links
+MONGO_COLLECTION_LINKS=architecture_links
+
+# MongoDB collection for storing architecture pages
+MONGO_COLLECTION_PAGES=architecture_pages
+
+# Celery broker URL (Redis)
+CELERY_BROKER_URL=redis://redis:6379/0
+
+# Celery result backend (Redis)
+CELERY_RESULT_BACKEND=redis://redis:6379/0
+```
+
+
 🚨 Make sure Docker Desktop is running in the background before executing the following command.
 
 2. **Running with Docker-compose: Build & Run**:
