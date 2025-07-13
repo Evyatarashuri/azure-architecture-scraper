@@ -1,0 +1,6 @@
+FROM ollama/ollama:latest
+
+COPY download_models.sh /usr/local/bin/download_models.sh
+RUN chmod +x /usr/local/bin/download_models.sh
+
+ENTRYPOINT ["/bin/sh", "-c", "ollama serve & /usr/local/bin/download_models.sh && wait"]
