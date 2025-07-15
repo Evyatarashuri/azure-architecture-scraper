@@ -24,12 +24,13 @@ These instructions will help you set up the project locally using Docker Compose
 ### Setup Instructions
 
 1. **Clone the repository**:
-   ```bash
+
+```bash
    git clone https://github.com/Evyatarashuri/azure-architecture.git
    cd azure-architecture
 ```
 
-2. **Setup .env file**
+2. **Setup .env file**:
 
 To create your local `.env` file, run one of the following commands:
 
@@ -128,7 +129,9 @@ Body example (JSON):
 ```
 Check out [`example-questions.md`](example-questions.md) 
 
----
+
+> ✅ Note: Ollama runs inside a Docker container, and all models will be automatically downloaded on first run.
+No manual installation is needed on your local machine.
 
 ## 📄 Technical Decisions - in building
 
