@@ -1,14 +1,17 @@
 
+# Ignoring common files and folders globally
 .env
-__pycache__/
+**__pycache__/
 *.pyc
 *.pyo
 *.pyd
 
-cache/
 
-config/
+# Ignoring specific files and directories related to the project
 
+.DS_Store
 download_models.sh/
-faiss_store/
-rag/
+backend/faiss_store/
+backend/chroma_store/
+backend/app/rag/
+backend/app/config.py
