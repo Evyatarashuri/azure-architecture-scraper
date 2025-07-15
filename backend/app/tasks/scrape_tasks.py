@@ -62,7 +62,7 @@ def fetch_links_task():
 
 # scrape each page task
 @celery_app.task(name="scrape_each_page_task")
-def scrape_each_page_task():
+def scrape_each_page_task(_=None):
     links_collection = get_links_collection()
     pages_collection = get_pages_collection()
 
@@ -96,7 +96,7 @@ def scrape_each_page_task():
 
 # Function to get embeddings from Ollama
 def get_embeddings_batch(texts: list[str]) -> list[list[float]]:
-    print(f"📤 Sending texts to Ollama for embedding: {texts[:5]}...")
+    print(f"📤 Sending texts to Ollama for embedding: ...")
     
     response = httpx.post(
         f"{OLLAMA_URL}/api/embed",
@@ -134,7 +134,7 @@ def chunk_text(text: str, max_tokens: int = 8000) -> list[str]:
 
 # embed all pages task
 @celery_app.task(name="embed_all_pages_direct")
-def embed_all_pages_direct():
+def embed_all_pages_direct(_=None):
     faiss_store_dir = os.path.dirname(FAISS_INDEX_PATH)
     try:
         os.makedirs(faiss_store_dir, exist_ok=True)
@@ -268,3 +268,5 @@ def embed_all_pages_direct():
     print(f"🎉 Done. Total vectors added to Faiss: {embedded_chunks}")
     print(f"📦 Final total vectors in Faiss: {index.ntotal}")
     print(f"📋 Sample metadata from Faiss: {metadata[:2] if metadata else []}")
+
+
