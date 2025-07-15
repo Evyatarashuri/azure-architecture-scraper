@@ -3,6 +3,8 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+import logging
+from app.logging_config import logger
 
 def create_driver():
     options = Options()
@@ -31,7 +33,7 @@ def scrape_links(skip: int = 0):
         return links
 
     except Exception as e:
-        print(f"⚠️  Skip={skip} failed with: {e}")
+        logger.error(f"Skip={skip} failed with: {e}")
         return []
     
     finally:
@@ -64,7 +66,7 @@ def scrape_architecture_page(url: str):
         }
 
     except Exception as e:
-        print(f"⚠️ Error scraping {url}: {e}")
+        logger.error(f"Error scraping {url}: {e}")
         return {}
 
     finally:

@@ -7,7 +7,7 @@ from langchain.schema import HumanMessage
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from app.tasks.scrape_tasks import get_embeddings_batch
-import logging
+from app.logging_config import logger
 
 router = APIRouter()
 
@@ -17,8 +17,6 @@ FAISS_METADATA_PATH = os.getenv("FAISS_METADATA_PATH", "/app/faiss_store/metadat
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://ollama:11434")
 OLLAMA_MODEL_CHAT = os.getenv("OLLAMA_MODEL_CHAT", "mistral")
 
-# Set up logging for better traceability
-logging.basicConfig(level=logging.INFO)
 
 llm = ChatOllama(
     model=OLLAMA_MODEL_CHAT,
@@ -37,10 +35,10 @@ def load_faiss_data():
         # Load metadata
         with open(FAISS_METADATA_PATH, "r") as f:
             metadata = json.load(f)
-        logging.info(f"✅ Loaded FAISS index and metadata: {index.ntotal} vectors, {len(metadata)} entries.")
+        logger.info(f"Loaded FAISS index and metadata: {index.ntotal} vectors, {len(metadata)} entries.")
         return index, metadata
     except Exception as e:
-        logging.error(f"❌ Failed to load FAISS index or metadata: {e}")
+        logger.error(f"Failed to load FAISS index or metadata: {e}")
         raise HTTPException(status_code=500, detail="Failed to load FAISS index or metadata.")
 
 @router.post("/")

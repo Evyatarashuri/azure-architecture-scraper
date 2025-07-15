@@ -6,7 +6,7 @@ import uuid
 import numpy as np
 import json
 import faiss
-import uuid
+from app.logging_config import logger
 from app.scrape.scrape_links_and_data import scrape_architecture_page, scrape_links
 
 from app.db.mongo import (
@@ -20,16 +20,16 @@ load_dotenv()
 
 celery_app = Celery(
     "scraper",
-    broker=os.getenv("CELERY_BROKER_URL"),
-    backend=os.getenv("CELERY_RESULT_BACKEND")
+    broker=os.getenv("CELERY_BROKER_URL", "redis://redis:6379/0"),
+    backend=os.getenv("CELERY_RESULT_BACKEND", "redis://redis:6379/0")
 )
 
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://ollama:11434")
 OLLAMA_MODEL_EMBEDDING = os.getenv("OLLAMA_MODEL_EMBEDDING", "nomic-embed-text")
 
 
-FAISS_INDEX_PATH = "/app/faiss_store/index.faiss"
-FAISS_METADATA_PATH = "/app/faiss_store/metadata.json"
+FAISS_INDEX_PATH = os.getenv("FAISS_INDEX_PATH" ,"/app/faiss_store/index.faiss")
+FAISS_METADATA_PATH = os.getenv("FAISS_METADATA_PATH" ,"/app/faiss_store/metadata.json")
 
 
 # fetch links task
@@ -37,15 +37,15 @@ FAISS_METADATA_PATH = "/app/faiss_store/metadata.json"
 def fetch_links_task():
     links_collection = get_links_collection()
 
-    print(f"📊 Found {links_collection.count_documents({})} links in MongoDB")
-    print("🔗 Fetching all architecture links...")
+    logger.info(f"Found {links_collection.count_documents({})} links in MongoDB")
+    logger.info("Fetching all architecture links...")
 
     existing_count = links_collection.count_documents({})
     if existing_count >= 352:
-        print(f"🛑 Found {existing_count} links in MongoDB — skipping scraping.")
+        logger.info(f"Found {existing_count} links in MongoDB — skipping scraping.")
         return
 
-    print("🌐 Scraping links with Selenium...")
+    logger.info("Scraping links with Selenium...")
     all_links = []
     skip = 0
 
@@ -57,7 +57,7 @@ def fetch_links_task():
         all_links.extend(links)
         skip += 6
 
-    print(f"✅ Total {len(set(all_links))} unique links inserted to MongoDB")
+    logger.info(f"Total {len(set(all_links))} unique links inserted to MongoDB")
 
 
 # scrape each page task
@@ -66,38 +66,38 @@ def scrape_each_page_task(_=None):
     links_collection = get_links_collection()
     pages_collection = get_pages_collection()
 
-    print("📄 Loading links from MongoDB and scraping each page...")
+    logger.info("Loading links from MongoDB and scraping each page...")
 
     existing_count = pages_collection.count_documents({})
-    print(f"📊 Found {existing_count} pages in MongoDB")
+    logger.info(f"Found {existing_count} pages in MongoDB")
 
     if existing_count >= 352:
-        print(f"🛑 Found {existing_count} pages in MongoDB — skipping scraping.")
+        logger.info(f"Found {existing_count} pages in MongoDB — skipping scraping.")
         return
 
     urls = [doc["url"] for doc in links_collection.find({})]
     total = len(urls)
-    print(f"🔢 Total URLs to scrape: {total}")
+    logger.info(f"🔢 Total URLs to scrape: {total}")
 
     for i, url in enumerate(urls, start=1):
         try:
             if insert_architecture_page_data({"url": url}, check_only=True):
-                print(f"⏭️ [{i}/{total}] Skipping {url} - already in MongoDB.")
+                logger.info(f"[{i}/{total}] Skipping {url} - already in MongoDB.")
                 continue
 
             data = scrape_architecture_page(url)
             insert_architecture_page_data(data)
 
-            print(f"✅ [{i}/{total}] Saved to MongoDB: {url}")
+            logger.info(f"[{i}/{total}] Saved to MongoDB: {url}")
 
         except Exception as e:
-            print(f"❌ [{i}/{total}] Failed for {url}: {e}")
+            logger.error(f"[{i}/{total}] Failed for {url}: {e}")
 
 
 # Function to get embeddings from Ollama
 def get_embeddings_batch(texts: list[str]) -> list[list[float]]:
-    print(f"📤 Sending texts to Ollama for embedding: ...")
-    
+    logger.info("Sending texts to Ollama for embedding...")
+
     response = httpx.post(
         f"{OLLAMA_URL}/api/embed",
         json={"model": OLLAMA_MODEL_EMBEDDING, "input": texts},
@@ -110,9 +110,9 @@ def get_embeddings_batch(texts: list[str]) -> list[list[float]]:
 
     data = response.json()
     if "embeddings" in data:
-        print(f"✅ Successfully received embeddings with {len(data['embeddings'])} entries.")
+        logger.info(f"Successfully received embeddings with {len(data['embeddings'])} entries.")
     else:
-        print("❌ No embeddings found in the response.")
+        logger.error("No embeddings found in the response.")
 
     return data["embeddings"]
 
@@ -132,20 +132,14 @@ def chunk_text(text: str, max_tokens: int = 8000) -> list[str]:
     return chunks
 
 
-# embed all pages task
 @celery_app.task(name="embed_all_pages_direct")
 def embed_all_pages_direct(_=None):
-    faiss_store_dir = os.path.dirname(FAISS_INDEX_PATH)
-    try:
-        os.makedirs(faiss_store_dir, exist_ok=True)
-        print(f"📂 Ensured faiss_store exists: {faiss_store_dir}")
-        print(f"📂 faiss_store contents: {os.listdir(faiss_store_dir)}")
-    except Exception as e:
-        print(f"❌ Failed to create/check faiss_store: {str(e)}")
-        raise
-
-    
     dimension = 768
+    faiss_store_dir = os.path.dirname(FAISS_INDEX_PATH)
+
+    os.makedirs(faiss_store_dir, exist_ok=True)
+    logger.info(f"Faiss store directory: {faiss_store_dir}")
+
     index = faiss.IndexFlatL2(dimension)
     metadata = []
     processed_doc_ids = set()
@@ -155,118 +149,76 @@ def embed_all_pages_direct(_=None):
             index = faiss.read_index(FAISS_INDEX_PATH)
             with open(FAISS_METADATA_PATH, "r") as f:
                 metadata = json.load(f)
-
-            processed_doc_ids = {entry["id"].split("-")[0] for entry in metadata}
-            print(f"✅ Loaded existing Faiss index with {index.ntotal} vectors")
-            print(f"📂 faiss_store contents after loading: {os.listdir(faiss_store_dir)}")
-            print(f"📋 Processed document IDs: {len(processed_doc_ids)}")
+            processed_doc_ids = {entry.get("doc_id") for entry in metadata}
+            logger.info(f"Loaded existing index with {index.ntotal} vectors")
         except Exception as e:
-            print(f"❌ Failed to load Faiss index or metadata: {str(e)}")
+            logger.error(f"Failed to load Faiss index or metadata: {e}")
             raise
 
     pages_collection = get_pages_collection()
-    print("📚 Loading documents from MongoDB...")
     documents = list(pages_collection.find({"_id": {"$nin": list(processed_doc_ids)}}))
-    total_docs = len(documents)
-    embedded_chunks = 0
-
-    print(f"🔢 Total documents to process: {total_docs}")
+    logger.info(f"Found {len(documents)} documents to embed")
 
     for doc_index, doc in enumerate(documents, start=1):
-        uid = str(doc["_id"])
-        print(f"\n🔍 Embedding doc {doc_index}/{total_docs} | ID: {uid}")
+        doc_id = str(doc["_id"])
+        logger.info(f"\nEmbedding document {doc_index} | ID: {doc_id}")
 
         content = f"{doc.get('title', '')}\n{' '.join(doc.get('tags', []))}\n{doc.get('content', '')}"
         chunks = chunk_text(content)
 
         if not chunks:
-            print(f"⚠️ Skipping empty doc {uid}")
+            logger.warning(f"Skipping empty document {doc_id}")
             continue
 
         batch_size = 10
         for batch_start in range(0, len(chunks), batch_size):
             batch = chunks[batch_start:batch_start + batch_size]
-            batch_ids = [f"{uid}-{str(uuid.uuid4())}" for _ in range(len(batch))]
+            batch_ids = [f"{doc_id}-{uuid.uuid4()}" for _ in range(len(batch))]
 
             try:
-                print(f"📤 Sending batch {batch_start + 1}–{batch_start + len(batch)} to Ollama...")
                 embeddings = get_embeddings_batch(batch)
                 embeddings = np.array(embeddings, dtype=np.float32)
-                print(f"✅ Received {len(embeddings)} embeddings.")
-
-                if len(batch_ids) != len(batch) or len(batch) != len(embeddings):
-                    raise ValueError(
-                        f"Batch size mismatch: {len(batch_ids)} IDs, {len(batch)} documents, {len(embeddings)} embeddings"
-                    )
 
                 if embeddings.shape[1] != dimension:
                     raise ValueError(f"Embedding dimension mismatch: expected {dimension}, got {embeddings.shape[1]}")
-                for i, emb in enumerate(embeddings):
-                    if np.any(np.isnan(emb)) or np.any(np.isinf(emb)):
-                        raise ValueError(f"NaN or inf found in embedding at index {i}: {emb}")
+                if np.any(np.isnan(embeddings)) or np.any(np.isinf(embeddings)):
+                    raise ValueError("NaN or inf values found in embeddings")
 
                 metadatas = [
                     {
+                        "doc_id": doc_id,
                         "url": doc.get("url", ""),
                         "title": doc.get("title", ""),
                         "chunk_index": batch_start + i
                     }
                     for i in range(len(batch))
                 ]
-                if len(metadatas) != len(batch):
-                    raise ValueError(f"Metadata mismatch: {len(metadatas)} metadatas, {len(batch)} documents")
-
-                print(f"💾 Adding to Faiss: {len(batch)} items")
-                print(f"📋 Sample ID: {batch_ids[0]}")
-                print(f"📋 Sample document: {batch[0][:100]}...")
-                print(f"📋 Sample embedding: {embeddings[0][:5]}... (length: {embeddings.shape[1]})")
-                print(f"📋 Sample metadata: {metadatas[0]}")
 
                 index.add(embeddings)
 
                 for i in range(len(batch)):
                     metadata.append({
                         "id": batch_ids[i],
+                        "doc_id": doc_id,
                         "document": batch[i],
                         "metadata": metadatas[i]
                     })
 
-                embedded_chunks += len(batch)
-                print(f"✅ Inserted {len(batch)} items into Faiss.")
-                print(f"📦 Current vectors in Faiss: {index.ntotal}")
-
-                if embedded_chunks % 10 == 0:
-                    try:
-                        faiss.write_index(index, FAISS_INDEX_PATH)
-                        with open(FAISS_METADATA_PATH, "w") as f:
-                            json.dump(metadata, f, ensure_ascii=False, indent=2)
-                        print(f"✅ Saved Faiss index and metadata after {embedded_chunks} items")
-                        print(f"📂 faiss_store contents after saving: {os.listdir(faiss_store_dir)}")
-                    except Exception as e:
-                        print(f"❌ Failed to save Faiss index or metadata: {str(e)}")
-                        raise
+                logger.info(f"Added {len(batch)} vectors to index (doc {doc_index})")
 
             except Exception as e:
-                print(f"❌ Failed embedding batch {batch_start + 1} for doc {uid}: {str(e)}")
-                print(f"Batch IDs sample: {batch_ids[:2]}...")
-                print(f"Batch documents sample: {batch[:2]}...")
-                print(f"Batch embeddings sample: {embeddings[:2]}...")
+                logger.error(f"Failed embedding batch for doc {doc_id}: {e}")
                 continue
-
-        processed_doc_ids.add(uid)
 
     try:
         faiss.write_index(index, FAISS_INDEX_PATH)
         with open(FAISS_METADATA_PATH, "w") as f:
             json.dump(metadata, f, ensure_ascii=False, indent=2)
-        print(f"✅ Final save of Faiss index and metadata to {FAISS_INDEX_PATH} and {FAISS_METADATA_PATH}")
-        print(f"📂 faiss_store contents after final save: {os.listdir(faiss_store_dir)}")
+        logger.info(f"Faiss index and metadata saved successfully")
     except Exception as e:
-        print(f"❌ Failed to save final Faiss index or metadata: {str(e)}")
+        logger.error(f"Failed to save Faiss index or metadata: {e}")
         raise
 
-    print(f"🎉 Done. Total vectors added to Faiss: {embedded_chunks}")
-    print(f"📦 Final total vectors in Faiss: {index.ntotal}")
-    print(f"📋 Sample metadata from Faiss: {metadata[:2] if metadata else []}")
+    logger.info(f"Done embedding. Total vectors in index: {index.ntotal}")
 
 
