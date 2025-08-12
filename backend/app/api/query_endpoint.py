@@ -41,7 +41,7 @@ def load_faiss_data():
         logger.error(f"Failed to load FAISS index or metadata: {e}")
         raise HTTPException(status_code=500, detail="Failed to load FAISS index or metadata.")
 
-@router.post("/")
+@router.post("")
 async def query_architectures(req: QueryRequest):
     """Query the FAISS index for the best match and use Ollama to get the answer."""
     index, metadata = load_faiss_data()  # Load the FAISS index and metadata
