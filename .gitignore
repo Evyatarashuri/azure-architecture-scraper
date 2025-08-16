@@ -1,4 +1,3 @@
-
 # Ignoring common files and folders globally
 .env
 **__pycache__/
@@ -8,10 +7,16 @@
 
 
 # Ignoring specific files and directories related to the project
-
 .DS_Store
 download_models.sh/
 backend/faiss_store/
 backend/chroma_store/
 backend/app/rag/
 backend/app/config.py
+
+# frontend Ignored files
+node_modules/
+frontend/node_modules/
+package-lock.json
+package.json
+frontend/env.d.ts

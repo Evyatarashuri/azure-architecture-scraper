@@ -42,7 +42,7 @@ graph TD
     F[Worker: embedding<br/>Queue: embedding<br/>Concurrency: 2]
     G[Generate vector embeddings]
 
-    %% צבעים
+
     style A fill:#ffe599,stroke:#999,stroke-width:1px,color:#000
     style B fill:#d9ead3,stroke:#666,stroke-width:1px
     style C fill:#cfe2f3,stroke:#666,stroke-width:1px

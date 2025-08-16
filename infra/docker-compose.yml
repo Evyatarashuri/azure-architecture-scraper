@@ -3,12 +3,12 @@ version: "3.9"
 services:
   backend:
     build:
-      context: ./backend
+      context: ../backend
     container_name: fastapi-backend
     working_dir: /app
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     volumes:
-      - ./backend:/app
+      - ../backend:/app
       - faiss_data:/app/faiss_store
     ports:
       - "8000:8000"
@@ -21,12 +21,12 @@ services:
 
   celery_worker_links:
     build:
-      context: ./backend
+      context: ../backend
     container_name: celery-worker-links
     working_dir: /app
     command: celery -A app.celery_worker worker --loglevel=info --concurrency=2 -Q links
     volumes:
-      - ./backend:/app
+      - ../backend:/app
       - faiss_data:/app/faiss_store
     env_file:
       - .env
@@ -37,12 +37,12 @@ services:
 
   celery_worker_pages:
     build:
-      context: ./backend
+      context: ../backend
     container_name: celery-worker-pages
     working_dir: /app
     command: celery -A app.celery_worker worker --loglevel=info --concurrency=2 -Q pages
     volumes:
-      - ./backend:/app
+      - ../backend:/app
       - faiss_data:/app/faiss_store
     env_file:
       - .env
@@ -53,13 +53,13 @@ services:
 
   celery_worker_embedding:
     build:
-      context: ./backend
+      context: ../backend
     container_name: celery-worker-embedding
     working_dir: /app
     command: >
       bash -c "mkdir -p /app/faiss_store && chmod -R 777 /app/faiss_store && celery -A app.celery_worker worker --loglevel=info --concurrency=2 -Q embedding"
     volumes:
-      - ./backend:/app
+      - ../backend:/app
       - faiss_data:/app/faiss_store
     env_file:
       - .env
@@ -91,7 +91,7 @@ services:
 
   ollama:
     build:
-      context: ./backend
+      context: ../backend
       dockerfile: Dockerfile.ollama
     container_name: ollama
     restart: always
@@ -109,7 +109,7 @@ services:
   frontend-dev:
     profiles: ["dev"]
     build:
-      context: ./frontend
+      context: ../frontend
       dockerfile: Dockerfile.dev
     environment:
       - VITE_API_PROXY_TARGET=http://fastapi-backend:8000
@@ -117,7 +117,7 @@ services:
     ports:
       - "5173:5173"
     volumes:
-      - ./frontend:/app
+      - ../frontend:/app
       - /app/node_modules
     depends_on:
       - backend
@@ -125,7 +125,7 @@ services:
   frontend:
     profiles: ["prod"]
     build:
-      context: ./frontend
+      context: ../frontend
       dockerfile: Dockerfile
     ports:
       - "3000:80"

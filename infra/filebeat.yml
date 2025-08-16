@@ -1,0 +1,33 @@
+filebeat.inputs:
+  - type: container
+    enabled: true
+    stream: all
+    paths:
+      - /var/lib/docker/containers/*/*-json.log
+
+    parsers:
+      - multiline:
+          type: pattern
+          pattern: '^(Traceback| {2,}File "| {2,}at )'
+          negate: false
+          match: after
+
+    processors:
+      - decode_json_fields:
+          fields: ["message"]
+          target: ""    
+          overwrite_keys: true
+
+processors:
+  - add_docker_metadata: ~
+  - add_host_metadata: ~
+
+output.elasticsearch:
+  hosts: ["http://elasticsearch:9200"]
+  index: "docker-logs-%{+yyyy.MM.dd}"
+
+setup.kibana.host: "http://kibana:5601"
+setup.template:
+  name: "docker-logs"
+  pattern: "docker-logs-*"
+  enabled: true

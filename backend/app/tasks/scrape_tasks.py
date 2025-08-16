@@ -104,7 +104,7 @@ def get_embeddings_batch(texts: list[str]) -> list[list[float]]:
         timeout=120.0
     )
 
-    print(f"📬 Received response from Ollama: {response.status_code}")
+    print(f"Received response from Ollama: {response.status_code}")
 
     response.raise_for_status()
 
