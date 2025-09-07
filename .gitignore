@@ -4,7 +4,8 @@
 *.pyc
 *.pyo
 *.pyd
-
+.idea/
+commands.md
 
 # Ignoring specific files and directories related to the project
 .DS_Store
@@ -13,6 +14,8 @@ backend/faiss_store/
 backend/chroma_store/
 backend/app/rag/
 backend/app/config.py
+infra/backend/
+infra/frontend/
 
 # frontend Ignored files
 node_modules/

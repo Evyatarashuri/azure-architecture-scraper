@@ -1,0 +1,19 @@
+receivers:
+  filelog:
+    include: [ /var/log/*.log ]
+    start_at: beginning
+
+exporters:
+  logzio:
+    endpoint: "https://listener.logz.io:8071"
+    account_token: ${LOGZ_TOKEN}
+
+processors:
+  batch:
+
+service:
+  pipelines:
+    logs:
+      receivers: [filelog]
+      processors: [batch]
+      exporters: [logzio]

@@ -47,6 +47,26 @@ services:
       resources:
         limits:
           memory: 256m
+  
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    command: ["--config=/etc/otelcol-config.yaml"]
+    environment:
+      - LOGZ_TOKEN=${LOGZ_TOKEN}
+    volumes:
+      - ./otelcol-config.yaml:/etc/otelcol-config.yaml
+      - /var/log:/var/log:ro
+
+  docker-logs-collector:
+    image: logzio/docker-logs-collector:latest
+    container_name: docker-logs-collector
+    environment:
+      - LOGZIO_LOGS_TOKEN=${LOGZ_TOKEN}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers
+    restart: always
+
 
 volumes:
   esdata:

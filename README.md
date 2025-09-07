@@ -15,6 +15,9 @@ Organizations spend millions on cloud infrastructure but often struggle to ident
 - **FAISS**  
 - **Selenium**  
 - **Ollama**
+- **TypeScript**
+- **React**
+- **ELK**
 
 
 ## Getting Started
